@@ -654,9 +654,9 @@ async function captureReport(btn) {
 
 // 초기 기본값 설정
 const DEFS = {
-  i: [{s:120,d:10},{s:240,d:10},{s:540,d:10}],
+  i: [{s:120,d:10},{s:240,d:10},{s:360,d:10}],
   c: [{s:120,d:15},{s:240,d:15},{s:360,d:60}],
-  l: [{s:120,d:10},{s:240,d:10},{s:540,d:10}]
+  l: [{s:120,d:10},{s:240,d:10},{s:360,d:10}]
 };
 ['i','c','l'].forEach(t => { DEFS[t].forEach(b => addBreak(t, b)); updateNote(t); });
 </script>
