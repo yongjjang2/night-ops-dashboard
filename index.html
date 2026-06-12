@@ -204,6 +204,16 @@
   <!-- ════ 입력 탭 ════ -->
   <div class="view active" id="view-input">
 
+    <!-- 날짜 설정 -->
+    <div class="team-card" style="margin-bottom:14px;">
+      <div class="team-body" style="padding:12px 18px;">
+        <div class="field" style="max-width:200px;">
+          <label>보고 날짜</label>
+          <input type="date" id="report-date-input" onchange="onDateChange(this.value)">
+        </div>
+      </div>
+    </div>
+
     <!-- 야간입고운영팀 -->
     <div class="team-card">
       <div class="team-card-head">
@@ -348,9 +358,23 @@
 
 <script>
 const now = new Date();
-const dateStr = now.getFullYear() + '.' + String(now.getMonth()+1).padStart(2,'0') + '.' + String(now.getDate()).padStart(2,'0');
-document.getElementById('today-label').textContent = dateStr + ' 야간 근무';
-document.getElementById('report-date').textContent = dateStr + ' · 06:00 기준';
+let dateStr = now.getFullYear() + '.' + String(now.getMonth()+1).padStart(2,'0') + '.' + String(now.getDate()).padStart(2,'0');
+
+function updateDateLabels() {
+  document.getElementById('today-label').textContent = dateStr + ' 야간 근무';
+  document.getElementById('report-date').textContent = dateStr + ' · 06:00 기준';
+}
+updateDateLabels();
+
+function onDateChange(val) {
+  if (!val) return;
+  const [y, m, d] = val.split('-');
+  dateStr = y + '.' + m + '.' + d;
+  updateDateLabels();
+}
+
+// 날짜 입력 초기값
+document.getElementById('report-date-input').value = now.toISOString().slice(0, 10);
 
 const ST = { i: null, c: null, l: null };
 const BC = { i: 0, c: 0, l: 0 };
@@ -494,6 +518,7 @@ function calc(t) {
       ...(ach!==null?[{l:'목표 달성률', v:ach, u:'%', c:ach>=100?'mv-g':'mv-a'}]:[])
     ]);
   }
+  renderReport();
 }
 
 function renderReport() {
