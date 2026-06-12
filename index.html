@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>야간책임운영실 생산성 보고</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root {
     --bg: #f7f7f5;
@@ -159,6 +160,25 @@
   .copy-btn:hover { background: var(--surface2); color: var(--text); }
   .empty-slack { text-align: center; color: var(--text3); font-size: 13px; padding: 32px 0; }
 
+  .capture-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; font-size: 13px; font-weight: 600;
+    border-radius: var(--radius-sm); border: none;
+    background: var(--slack); color: #fff; cursor: pointer;
+    transition: background 0.12s; flex-shrink: 0;
+  }
+  .capture-btn:hover { background: #611f69; }
+  .capture-btn:disabled { opacity: 0.6; cursor: default; }
+
+  .capture-toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #1a1a18; color: #fff; padding: 10px 20px;
+    border-radius: var(--radius); font-size: 13px; font-weight: 500;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000;
+    white-space: nowrap;
+  }
+  .capture-toast.show { opacity: 1; }
+
   @media (max-width: 520px) {
     .input-row { grid-template-columns: 1fr 1fr; }
     .summary-row { grid-template-columns: 1fr; }
@@ -288,19 +308,23 @@
   <!-- ════ 보고 요약 탭 ════ -->
   <div class="view" id="view-report">
     <div class="report-header">
-      <h2>야간 생산성 보고 요약</h2>
-      <span class="rdate" id="report-date"></span>
+      <div>
+        <h2>야간 생산성 보고 요약</h2>
+        <span class="rdate" id="report-date"></span>
+      </div>
+      <button class="capture-btn" onclick="captureReport(this)">📸 이미지 복사</button>
     </div>
 
-    <div class="summary-row" id="summary-row">
-      <div class="sum-cell"><div class="sl">총 근무인원</div><div class="sv" id="sum-total">—</div></div>
-      <div class="sum-cell"><div class="sl">기준시각</div><div class="sv">06:00</div></div>
-      <div class="sum-cell"><div class="sl">산출 팀 수</div><div class="sv" id="sum-teams">0 / 3</div></div>
+    <div id="report-capture-area">
+      <div class="summary-row" id="summary-row">
+        <div class="sum-cell"><div class="sl">총 근무인원</div><div class="sv" id="sum-total">—</div></div>
+        <div class="sum-cell"><div class="sl">기준시각</div><div class="sv">06:00</div></div>
+        <div class="sum-cell"><div class="sl">예상 마감시간</div><div class="sv" id="sum-endtime">—</div></div>
+      </div>
+      <div class="report-grid" id="report-grid"></div>
     </div>
 
-    <div class="report-grid" id="report-grid"></div>
-
-    <button class="global-btn" onclick="buildSlack();switchTab('slack');">💬 슬랙 메시지 생성</button>
+    <button class="global-btn" style="margin-top:4px;" onclick="buildSlack();switchTab('slack');">💬 슬랙 메시지 생성</button>
   </div>
 
   <!-- ════ 슬랙 탭 ════ -->
@@ -319,6 +343,7 @@
   </div>
 
 </div><!-- /page -->
+<div class="capture-toast" id="capture-toast"></div>
 
 <script>
 const now = new Date();
@@ -535,7 +560,8 @@ function renderReport() {
   });
 
   document.getElementById('sum-total').textContent = totalPeople ? totalPeople + '명' : '—';
-  document.getElementById('sum-teams').textContent = calcCount + ' / 3';
+  const endTimes = [...new Set([ST.i?.endLbl, ST.c?.endLbl, ST.l?.endLbl].filter(Boolean))];
+  document.getElementById('sum-endtime').textContent = endTimes.length ? endTimes.join(' · ') : '—';
 }
 
 function buildSlack() {
@@ -588,6 +614,46 @@ function copySlack() {
     btn.textContent = '✓ 복사됨';
     setTimeout(() => { btn.textContent = '📋 클립보드 복사'; }, 1500);
   });
+}
+
+function showToast(msg) {
+  const el = document.getElementById('capture-toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+async function captureReport(btn) {
+  const area = document.getElementById('report-capture-area');
+  if (!area) return;
+  btn.disabled = true;
+  btn.textContent = '⏳ 캡처 중…';
+  try {
+    const canvas = await html2canvas(area, {
+      backgroundColor: '#f7f7f5',
+      scale: 2,
+      useCORS: true,
+      logging: false
+    });
+    canvas.toBlob(async blob => {
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        showToast('✅ 이미지가 클립보드에 복사됐어요 — 슬랙에 붙여넣기 하세요!');
+      } catch {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `야간보고_${dateStr}.png`; a.click();
+        URL.revokeObjectURL(url);
+        showToast('📥 이미지를 다운로드했어요 (브라우저 제한으로 클립보드 불가)');
+      }
+      btn.disabled = false;
+      btn.textContent = '📸 이미지 복사';
+    }, 'image/png');
+  } catch (e) {
+    showToast('❌ 캡처에 실패했습니다');
+    btn.disabled = false;
+    btn.textContent = '📸 이미지 복사';
+  }
 }
 
 // 초기 기본값 설정
