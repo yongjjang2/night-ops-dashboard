@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>야간책임운영실 생산성 보고</title>
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --surface2: #f2f2ef;
+    --border: #e4e4e0;
+    --border2: #d0d0cb;
+    --text: #1a1a18;
+    --text2: #6b6b66;
+    --text3: #9b9b96;
+    --blue-bg: #e8f0fb;
+    --blue-text: #1a4a9e;
+    --teal-bg: #e0f4ec;
+    --teal-text: #0a5c42;
+    --amber-bg: #fef3e0;
+    --amber-text: #7a4a00;
+    --green: #0a6640;
+    --red: #b83030;
+    --slack: #4A154B;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .page { max-width: 860px; margin: 0 auto; padding: 32px 20px 60px; }
+
+  .page-header { margin-bottom: 28px; }
+  .page-header h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; }
+  .page-header .sub { font-size: 13px; color: var(--text2); margin-top: 4px; }
+
+  .tab-row { display: flex; gap: 6px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+  .tab { font-size: 13px; padding: 8px 16px; border: none; background: none; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; font-weight: 500; }
+  .tab.active { color: var(--text); border-bottom-color: var(--text); }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── INPUT VIEW ── */
+  .team-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 14px; overflow: hidden; }
+  .team-card-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .team-card-head h2 { font-size: 14px; font-weight: 600; }
+  .badge { font-size: 11px; font-weight: 500; padding: 2px 9px; border-radius: 20px; margin-left: auto; white-space: nowrap; }
+  .bd-blue { background: var(--blue-bg); color: var(--blue-text); }
+  .bd-teal { background: var(--teal-bg); color: var(--teal-text); }
+  .bd-amber { background: var(--amber-bg); color: var(--amber-text); }
+  .team-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+  .icon-blue { background: var(--blue-bg); }
+  .icon-teal { background: var(--teal-bg); }
+  .icon-amber { background: var(--amber-bg); }
+
+  .team-body { padding: 16px 18px; }
+  .input-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .field label { display: block; font-size: 11px; font-weight: 500; color: var(--text2); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .field input, .field select {
+    width: 100%; font-size: 13px; padding: 7px 10px;
+    border-radius: var(--radius-sm); border: 1px solid var(--border2);
+    background: var(--surface2); color: var(--text);
+    transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: #888; background: #fff; }
+
+  .section-sep { height: 1px; background: var(--border); margin: 14px 0; }
+
+  .break-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .break-header span { font-size: 11px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.04em; }
+  .add-brk { font-size: 12px; padding: 3px 10px; border-radius: var(--radius-sm); border: 1px dashed var(--border2); background: none; color: var(--text2); cursor: pointer; }
+  .add-brk:hover { border-style: solid; color: var(--text); }
+
+  .brk-row { display: grid; grid-template-columns: 1fr 1fr 28px; gap: 6px; align-items: end; margin-bottom: 6px; }
+  .rm-btn { width: 28px; height: 28px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: none; color: var(--text3); cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+  .rm-btn:hover { background: #fef0f0; color: var(--red); border-color: #f0c0c0; }
+
+  .time-note { font-size: 12px; color: var(--text2); background: var(--surface2); border-radius: var(--radius-sm); padding: 8px 11px; margin-top: 10px; line-height: 1.7; }
+  .time-note strong { color: var(--text); }
+
+  .calc-btn {
+    width: 100%; margin-top: 12px; padding: 9px;
+    font-size: 13px; font-weight: 600;
+    border-radius: var(--radius-sm); border: 1px solid var(--border2);
+    background: var(--surface2); color: var(--text);
+    cursor: pointer; transition: background 0.12s;
+  }
+  .calc-btn:hover { background: #ebebea; }
+
+  .result-area { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+  .metric { background: var(--surface2); border-radius: var(--radius-sm); padding: 10px 12px; }
+  .metric .ml { font-size: 11px; color: var(--text2); margin-bottom: 3px; line-height: 1.3; }
+  .metric .mv { font-size: 18px; font-weight: 600; }
+  .metric .mu { font-size: 11px; color: var(--text2); font-weight: 400; }
+  .mv-g { color: var(--green); }
+  .mv-a { color: var(--amber-text); }
+  .mv-b { color: var(--blue-text); }
+
+  .global-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; padding: 11px; margin-top: 6px;
+    font-size: 14px; font-weight: 600;
+    border-radius: var(--radius-sm); border: 1px solid var(--border2);
+    background: var(--surface); color: var(--text); cursor: pointer;
+    transition: background 0.12s;
+  }
+  .global-btn:hover { background: var(--surface2); }
+
+  /* ── REPORT VIEW ── */
+  .report-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+  .report-header h2 { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+  .report-header .rdate { font-size: 12px; color: var(--text2); }
+  .report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .rcard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .rcard-top { padding: 13px 16px 11px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .rcard-top h3 { font-size: 13px; font-weight: 600; }
+  .rcard-top .rtime { font-size: 11px; color: var(--text2); margin-left: auto; }
+  .rcard-body { padding: 14px 16px; }
+  .stat-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .stat-row:last-child { margin-bottom: 0; }
+  .stat-label { font-size: 12px; color: var(--text2); }
+  .stat-val { font-size: 13px; font-weight: 600; }
+  .stat-big { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 2px; }
+  .stat-sub { font-size: 12px; color: var(--text2); }
+  .progress-wrap { margin: 12px 0 4px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+  .progress-bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s; background: var(--green); }
+  .progress-fill.warn { background: #d4820a; }
+  .rcard-empty { padding: 28px 16px; text-align: center; color: var(--text3); font-size: 13px; }
+
+  .summary-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+  .sum-cell { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .sum-cell .sl { font-size: 11px; color: var(--text2); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sum-cell .sv { font-size: 22px; font-weight: 700; }
+
+  /* ── SLACK VIEW ── */
+  .slack-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .slack-card-top { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .slack-card-top h2 { font-size: 14px; font-weight: 600; }
+  .slack-dot { width: 12px; height: 12px; border-radius: 3px; background: var(--slack); flex-shrink: 0; }
+  .slack-body { padding: 16px 18px; }
+  .slack-msg {
+    background: var(--surface2); border-radius: var(--radius-sm);
+    border-left: 3px solid var(--slack);
+    padding: 14px 16px; font-size: 13px; line-height: 1.75;
+    font-family: 'SFMono-Regular', Consolas, monospace; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .slack-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .copy-btn {
+    font-size: 12px; padding: 6px 14px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border2); background: none; color: var(--text2);
+    cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+  }
+  .copy-btn:hover { background: var(--surface2); color: var(--text); }
+  .empty-slack { text-align: center; color: var(--text3); font-size: 13px; padding: 32px 0; }
+
+  @media (max-width: 520px) {
+    .input-row { grid-template-columns: 1fr 1fr; }
+    .summary-row { grid-template-columns: 1fr; }
+    .report-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="page-header">
+    <h1>🌙 야간책임운영실 생산성 보고</h1>
+    <div class="sub" id="today-label"></div>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab active" onclick="switchTab('input')">데이터 입력</button>
+    <button class="tab" onclick="switchTab('report')">보고 요약</button>
+    <button class="tab" onclick="switchTab('slack')">슬랙 메시지</button>
+  </div>
+
+  <!-- ════ 입력 탭 ════ -->
+  <div class="view active" id="view-input">
+
+    <!-- 야간입고운영팀 -->
+    <div class="team-card">
+      <div class="team-card-head">
+        <div class="team-icon icon-blue">📦</div>
+        <h2>야간입고운영팀</h2>
+        <span class="badge bd-blue" id="ib-badge">00:00 ~ 09:00</span>
+      </div>
+      <div class="team-body">
+        <div class="input-row">
+          <div class="field"><label>총 근무인원</label><input type="number" id="i-total" placeholder="명" min="0"></div>
+          <div class="field"><label>분류 담당</label><input type="number" id="i-sort" placeholder="명" min="0"></div>
+          <div class="field"><label>06시 분류건수</label><input type="number" id="i-count" placeholder="건" min="0"></div>
+          <div class="field"><label>목표 처리량</label><input type="number" id="i-target" placeholder="건 (선택)" min="0"></div>
+        </div>
+        <div class="section-sep"></div>
+        <div class="input-row" style="margin-bottom:10px;">
+          <div class="field"><label>퇴근시간</label>
+            <select id="i-end" onchange="syncIL();updateNote('i');">
+              <option value="540">09:00</option><option value="570">09:30</option><option value="600">10:00</option>
+            </select>
+          </div>
+        </div>
+        <div class="break-header">
+          <span>휴게시간</span>
+          <button class="add-brk" onclick="addBreak('i')">+ 추가</button>
+        </div>
+        <div id="i-brks"></div>
+        <div class="time-note" id="i-note"></div>
+        <button class="calc-btn" onclick="calc('i')">⟶ 생산성 산출</button>
+        <div class="result-area" id="i-result"></div>
+      </div>
+    </div>
+
+    <!-- 개별클리닝파트 -->
+    <div class="team-card">
+      <div class="team-card-head">
+        <div class="team-icon icon-teal">👔</div>
+        <h2>야간세탁 — 개별클리닝파트</h2>
+        <span class="badge bd-teal" id="cb-badge">00:00 ~ 08:00</span>
+      </div>
+      <div class="team-body">
+        <div class="input-row">
+          <div class="field"><label>총 근무인원</label><input type="number" id="c-total" placeholder="명" min="0"></div>
+          <div class="field"><label>분류 담당</label><input type="number" id="c-sort" placeholder="명" min="0"></div>
+          <div class="field"><label>06시 분류건수</label><input type="number" id="c-count" placeholder="건" min="0"></div>
+          <div class="field"><label>목표 처리량</label><input type="number" id="c-target" placeholder="건 (선택)" min="0"></div>
+        </div>
+        <div class="section-sep"></div>
+        <div class="input-row" style="margin-bottom:10px;">
+          <div class="field"><label>퇴근시간</label>
+            <select id="c-end" onchange="updateNote('c');">
+              <option value="480">08:00</option><option value="510">08:30</option><option value="540">09:00</option>
+            </select>
+          </div>
+        </div>
+        <div class="break-header">
+          <span>휴게시간</span>
+          <button class="add-brk" onclick="addBreak('c')">+ 추가</button>
+        </div>
+        <div id="c-brks"></div>
+        <div class="time-note" id="c-note"></div>
+        <button class="calc-btn" onclick="calc('c')">⟶ 생산성 산출</button>
+        <div class="result-area" id="c-result"></div>
+      </div>
+    </div>
+
+    <!-- 런드리파트 -->
+    <div class="team-card">
+      <div class="team-card-head">
+        <div class="team-icon icon-amber">🫧</div>
+        <h2>야간세탁 — 런드리파트</h2>
+        <span class="badge bd-amber" id="lb-badge">00:00 ~ 09:00</span>
+      </div>
+      <div class="team-body">
+        <div class="input-row">
+          <div class="field"><label>총 근무인원</label><input type="number" id="l-total" placeholder="명" min="0"></div>
+          <div class="field"><label>06시 DAS할당 건수</label><input type="number" id="l-das" placeholder="건" min="0"></div>
+          <div class="field"><label>목표 DAS할당</label><input type="number" id="l-target" placeholder="건 (선택)" min="0"></div>
+        </div>
+        <div class="section-sep"></div>
+        <div class="input-row" style="margin-bottom:10px;">
+          <div class="field"><label>퇴근시간</label>
+            <select id="l-end" onchange="syncIL();updateNote('l');">
+              <option value="540">09:00</option><option value="570">09:30</option><option value="600">10:00</option>
+            </select>
+          </div>
+        </div>
+        <div class="break-header">
+          <span>휴게시간</span>
+          <button class="add-brk" onclick="addBreak('l')">+ 추가</button>
+        </div>
+        <div id="l-brks"></div>
+        <div class="time-note" id="l-note"></div>
+        <button class="calc-btn" onclick="calc('l')">⟶ 생산성 산출</button>
+        <div class="result-area" id="l-result"></div>
+      </div>
+    </div>
+
+    <button class="global-btn" onclick="switchTab('report')">📊 보고 요약 보기</button>
+    <button class="global-btn" style="margin-top:8px;" onclick="buildSlack();switchTab('slack');">💬 슬랙 메시지 생성</button>
+  </div>
+
+  <!-- ════ 보고 요약 탭 ════ -->
+  <div class="view" id="view-report">
+    <div class="report-header">
+      <h2>야간 생산성 보고 요약</h2>
+      <span class="rdate" id="report-date"></span>
+    </div>
+
+    <div class="summary-row" id="summary-row">
+      <div class="sum-cell"><div class="sl">총 근무인원</div><div class="sv" id="sum-total">—</div></div>
+      <div class="sum-cell"><div class="sl">기준시각</div><div class="sv">06:00</div></div>
+      <div class="sum-cell"><div class="sl">산출 팀 수</div><div class="sv" id="sum-teams">0 / 3</div></div>
+    </div>
+
+    <div class="report-grid" id="report-grid"></div>
+
+    <button class="global-btn" onclick="buildSlack();switchTab('slack');">💬 슬랙 메시지 생성</button>
+  </div>
+
+  <!-- ════ 슬랙 탭 ════ -->
+  <div class="view" id="view-slack">
+    <div class="slack-card">
+      <div class="slack-card-top">
+        <div class="slack-dot"></div>
+        <h2>슬랙 보고 메시지</h2>
+      </div>
+      <div class="slack-body">
+        <div id="slack-content">
+          <div class="empty-slack">아직 산출된 데이터가 없습니다.<br>데이터 입력 탭에서 생산성을 산출해주세요.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+const now = new Date();
+const dateStr = now.getFullYear() + '.' + String(now.getMonth()+1).padStart(2,'0') + '.' + String(now.getDate()).padStart(2,'0');
+document.getElementById('today-label').textContent = dateStr + ' 야간 근무';
+document.getElementById('report-date').textContent = dateStr + ' · 06:00 기준';
+
+const ST = { i: null, c: null, l: null };
+const BC = { i: 0, c: 0, l: 0 };
+
+function hm(m) { return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0'); }
+function gv(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((el,i) => {
+    const tabs = ['input','report','slack'];
+    el.classList.toggle('active', tabs[i] === t);
+  });
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + t).classList.add('active');
+  if (t === 'report') renderReport();
+}
+
+function timeOpts(from, to, step) {
+  let s = '';
+  for (let m = from; m <= to; m += step)
+    s += `<option value="${m}">${hm(m)}</option>`;
+  return s;
+}
+
+function addBreak(t, def) {
+  const id = ++BC[t];
+  const el = document.createElement('div');
+  el.className = 'brk-row'; el.id = `${t}-b${id}`;
+  el.innerHTML =
+    `<div class="field"><label>시작</label><select id="${t}-bs${id}" onchange="updateNote('${t}')">${timeOpts(0,570,10)}</select></div>` +
+    `<div class="field"><label>휴게</label><select id="${t}-bd${id}" onchange="updateNote('${t}')"><option value="10">10분</option><option value="15">15분</option><option value="30">30분</option><option value="60">60분</option></select></div>` +
+    `<button class="rm-btn" onclick="rmBreak('${t}',${id})">✕</button>`;
+  document.getElementById(t + '-brks').appendChild(el);
+  if (def) { document.getElementById(`${t}-bs${id}`).value = def.s; document.getElementById(`${t}-bd${id}`).value = def.d; }
+  updateNote(t);
+}
+
+function rmBreak(t, id) { const el = document.getElementById(`${t}-b${id}`); if (el) el.remove(); updateNote(t); }
+
+function getBreaks(t) {
+  return Array.from(document.querySelectorAll(`#${t}-brks .brk-row`)).map(r => {
+    const n = r.id.match(/-b(\d+)$/)[1];
+    return { s: parseInt(document.getElementById(`${t}-bs${n}`).value), d: parseInt(document.getElementById(`${t}-bd${n}`).value) };
+  });
+}
+
+function brkOverlap(breaks, from, to) {
+  return breaks.reduce((sum, b) => sum + Math.max(0, Math.min(b.s+b.d, to) - Math.max(b.s, from)), 0);
+}
+
+function updateNote(t) {
+  const endMin = parseInt(document.getElementById(t + '-end').value);
+  const breaks = getBreaks(t);
+  const w06 = 360 - brkOverlap(breaks, 0, 360);
+  const rem = (endMin - 360) - brkOverlap(breaks, 360, endMin);
+  const bList = breaks.length ? breaks.map(b => `${hm(b.s)}~${hm(b.s+b.d)}(${b.d}분)`).join(' · ') : '없음';
+  document.getElementById(t + '-note').innerHTML =
+    `휴게: ${bList}<br><strong>06:00까지 실작업 ${w06}분</strong> · <strong>${hm(endMin)} 마감까지 잔여 ${rem}분</strong>`;
+  const endLbl = `00:00 ~ ${hm(endMin)}`;
+  if (t === 'i') document.getElementById('ib-badge').textContent = endLbl;
+  if (t === 'c') document.getElementById('cb-badge').textContent = endLbl;
+  if (t === 'l') document.getElementById('lb-badge').textContent = endLbl;
+}
+
+function syncIL() {
+  const iv = document.getElementById('i-end').value;
+  const lv = document.getElementById('l-end').value;
+  if (event && event.target && event.target.id === 'i-end') {
+    document.getElementById('l-end').value = iv; updateNote('l');
+  } else {
+    document.getElementById('i-end').value = lv; updateNote('i');
+  }
+}
+
+function renderMetrics(elId, metrics) {
+  const el = document.getElementById(elId);
+  el.style.display = 'block';
+  el.innerHTML = `<div class="metrics-grid">${metrics.map(m =>
+    `<div class="metric"><div class="ml">${m.l}</div><div class="mv ${m.c||''}">${m.v}<span class="mu"> ${m.u}</span></div></div>`
+  ).join('')}</div>`;
+}
+
+function calc(t) {
+  const endMin = parseInt(document.getElementById(t + '-end').value);
+  const breaks = getBreaks(t);
+  const w06 = 360 - brkOverlap(breaks, 0, 360);
+  const rem = (endMin - 360) - brkOverlap(breaks, 360, endMin);
+  const endLbl = hm(endMin);
+  if (w06 <= 0) return;
+
+  if (t === 'i') {
+    const total=gv('i-total'), sort=gv('i-sort'), count=gv('i-count'), target=gv('i-target');
+    if (!sort || !count) return;
+    const rpm = count / sort / w06;
+    const est = count + Math.round(rpm * sort * rem);
+    const ppt = Math.round(est / sort);
+    const ph = Math.round(rpm * 60 * 10) / 10;
+    const ach = target ? Math.round(est / target * 100) : null;
+    ST.i = { total, sort, count, target, ph, est, ppt, ach, endLbl, w06, rem };
+    renderMetrics('i-result', [
+      {l:'총 근무인원', v:total, u:'명'},
+      {l:'분류 담당', v:sort, u:'명'},
+      {l:'06시 분류건수', v:count.toLocaleString(), u:'건'},
+      {l:'인당/h (실작업)', v:ph, u:'건/h', c:'mv-a'},
+      {l:endLbl+' 마감 예상', v:est.toLocaleString(), u:'건', c:'mv-g'},
+      {l:'인당 예상 총처리', v:ppt.toLocaleString(), u:'건', c:'mv-b'},
+      ...(ach!==null?[{l:'목표 달성률', v:ach, u:'%', c:ach>=100?'mv-g':'mv-a'}]:[])
+    ]);
+  } else if (t === 'c') {
+    const total=gv('c-total'), sort=gv('c-sort'), count=gv('c-count'), target=gv('c-target');
+    if (!sort || !count) return;
+    const rpm = count / sort / w06;
+    const est = count + Math.round(rpm * sort * rem);
+    const ppt = Math.round(est / sort);
+    const ph = Math.round(rpm * 60 * 10) / 10;
+    const ach = target ? Math.round(est / target * 100) : null;
+    ST.c = { total, sort, count, target, ph, est, ppt, ach, endLbl, w06, rem };
+    renderMetrics('c-result', [
+      {l:'총 근무인원', v:total, u:'명'},
+      {l:'분류 담당', v:sort, u:'명'},
+      {l:'06시 분류건수', v:count.toLocaleString(), u:'건'},
+      {l:'인당/h (실작업)', v:ph, u:'건/h', c:'mv-a'},
+      {l:endLbl+' 마감 예상', v:est.toLocaleString(), u:'건', c:'mv-g'},
+      {l:'인당 예상 총처리', v:ppt.toLocaleString(), u:'건', c:'mv-b'},
+      ...(ach!==null?[{l:'목표 달성률', v:ach, u:'%', c:ach>=100?'mv-g':'mv-a'}]:[])
+    ]);
+  } else {
+    const total=gv('l-total'), das=gv('l-das'), target=gv('l-target');
+    if (!total || !das) return;
+    const rpm = das / total / w06;
+    const est = das + Math.round(rpm * total * rem);
+    const ph = Math.round(rpm * 60 * 10) / 10;
+    const ach = target ? Math.round(est / target * 100) : null;
+    ST.l = { total, das, target, ph, est, ach, endLbl, w06, rem };
+    renderMetrics('l-result', [
+      {l:'총 근무인원', v:total, u:'명'},
+      {l:'06시 DAS할당', v:das.toLocaleString(), u:'건'},
+      {l:'목표', v:target?target.toLocaleString():'-', u:'건'},
+      {l:'인당/h (실작업)', v:ph, u:'건/h', c:'mv-a'},
+      {l:endLbl+' 마감 예상', v:est.toLocaleString(), u:'건', c:'mv-g'},
+      ...(ach!==null?[{l:'목표 달성률', v:ach, u:'%', c:ach>=100?'mv-g':'mv-a'}]:[])
+    ]);
+  }
+}
+
+function renderReport() {
+  const teams = [
+    { key: 'i', name: '야간입고운영팀', icon: '📦', cls: 'bd-blue' },
+    { key: 'c', name: '개별클리닝파트', icon: '👔', cls: 'bd-teal' },
+    { key: 'l', name: '런드리파트', icon: '🫧', cls: 'bd-amber' }
+  ];
+  let totalPeople = 0;
+  let calcCount = 0;
+  const grid = document.getElementById('report-grid');
+  grid.innerHTML = '';
+
+  teams.forEach(({ key, name, icon, cls }) => {
+    const s = ST[key];
+    const card = document.createElement('div');
+    card.className = 'rcard';
+
+    if (!s) {
+      card.innerHTML = `
+        <div class="rcard-top">
+          <span>${icon}</span>
+          <h3>${name}</h3>
+          <span class="rtime">미입력</span>
+        </div>
+        <div class="rcard-empty">데이터를 입력하고 산출해주세요</div>`;
+    } else {
+      calcCount++;
+      const people = key === 'l' ? s.total : s.total;
+      totalPeople += people;
+      const mainVal = key === 'l' ? s.est.toLocaleString() : s.est.toLocaleString();
+      const mainLabel = key === 'l' ? 'DAS할당 예상 (마감)' : '분류건수 예상 (마감)';
+      const sortLabel = key === 'l' ? null : `분류담당 ${s.sort}명 / 인당 ${s.ppt.toLocaleString()}건`;
+
+      let progressHTML = '';
+      if (s.ach !== null) {
+        const pct = Math.min(s.ach, 100);
+        const fillCls = s.ach >= 100 ? '' : 'warn';
+        progressHTML = `
+          <div class="progress-wrap">
+            <div class="progress-label"><span>목표 달성률</span><span>${s.ach}%</span></div>
+            <div class="progress-bar"><div class="progress-fill ${fillCls}" style="width:${pct}%"></div></div>
+          </div>`;
+      }
+
+      card.innerHTML = `
+        <div class="rcard-top">
+          <span>${icon}</span>
+          <h3>${name}</h3>
+          <span class="rtime">마감 ${s.endLbl}</span>
+        </div>
+        <div class="rcard-body">
+          <div class="stat-big mv-g">${mainVal}<span style="font-size:14px;font-weight:500;color:var(--text2);"> 건</span></div>
+          <div class="stat-sub">${mainLabel}</div>
+          ${progressHTML}
+          <div class="section-sep" style="margin:10px 0;"></div>
+          <div class="stat-row"><span class="stat-label">근무인원</span><span class="stat-val">${s.total}명</span></div>
+          ${sortLabel ? `<div class="stat-row"><span class="stat-label">분류담당</span><span class="stat-val">${sortLabel}</span></div>` : ''}
+          <div class="stat-row"><span class="stat-label">06시 실적</span><span class="stat-val">${key==='l' ? s.das.toLocaleString() : s.count.toLocaleString()}건</span></div>
+          <div class="stat-row"><span class="stat-label">인당 시간당</span><span class="stat-val" style="color:var(--amber-text)">${s.ph}건/h</span></div>
+          <div class="stat-row"><span class="stat-label">실작업시간</span><span class="stat-val">${s.w06}분 + ${s.rem}분</span></div>
+        </div>`;
+    }
+    grid.appendChild(card);
+  });
+
+  document.getElementById('sum-total').textContent = totalPeople ? totalPeople + '명' : '—';
+  document.getElementById('sum-teams').textContent = calcCount + ' / 3';
+}
+
+function buildSlack() {
+  const container = document.getElementById('slack-content');
+  if (!ST.i && !ST.c && !ST.l) {
+    container.innerHTML = '<div class="empty-slack">아직 산출된 데이터가 없습니다.<br>데이터 입력 탭에서 생산성을 산출해주세요.</div>';
+    return;
+  }
+  let L = [];
+  L.push(`[야간책임운영실 생산성 보고 — ${dateStr}]`);
+  L.push(`📍 기준: 06:00 / 실작업시간 반영`);
+  L.push('');
+  if (ST.i) { const s=ST.i;
+    L.push(`▶ 야간입고운영팀 (마감 ${s.endLbl})`);
+    L.push(`  · 근무 ${s.total}명 (분류 ${s.sort}명) / 실작업 ${s.w06}분+${s.rem}분`);
+    L.push(`  · 06시 분류 ${s.count.toLocaleString()}건 / 인당 ${s.ph}건/h`);
+    L.push(`  · ${s.endLbl} 예상 ${s.est.toLocaleString()}건 (인당 ${s.ppt.toLocaleString()}건)`);
+    if (s.ach!==null) L.push(`  · 목표 달성률 ${s.ach}% ${s.ach>=100?'✅':'⚠️'} (목표 ${s.target.toLocaleString()}건)`);
+    L.push('');
+  }
+  if (ST.c) { const s=ST.c;
+    L.push(`▶ 야간세탁 — 개별클리닝파트 (마감 ${s.endLbl})`);
+    L.push(`  · 근무 ${s.total}명 (분류 ${s.sort}명) / 실작업 ${s.w06}분+${s.rem}분`);
+    L.push(`  · 06시 분류 ${s.count.toLocaleString()}건 / 인당 ${s.ph}건/h`);
+    L.push(`  · ${s.endLbl} 예상 ${s.est.toLocaleString()}건 (인당 ${s.ppt.toLocaleString()}건)`);
+    if (s.ach!==null) L.push(`  · 목표 달성률 ${s.ach}% ${s.ach>=100?'✅':'⚠️'} (목표 ${s.target.toLocaleString()}건)`);
+    L.push('');
+  }
+  if (ST.l) { const s=ST.l;
+    L.push(`▶ 야간세탁 — 런드리파트 (마감 ${s.endLbl})`);
+    L.push(`  · 근무 ${s.total}명 / 실작업 ${s.w06}분+${s.rem}분`);
+    L.push(`  · 06시 DAS할당 ${s.das.toLocaleString()}건 / 인당 ${s.ph}건/h`);
+    L.push(`  · ${s.endLbl} 예상 ${s.est.toLocaleString()}건`);
+    if (s.ach!==null) L.push(`  · 목표 달성률 ${s.ach}% ${s.ach>=100?'✅':'⚠️'} (목표 ${s.target.toLocaleString()}건)`);
+    L.push('');
+  }
+  const msg = L.join('\n');
+  container.innerHTML = `
+    <div class="slack-msg" id="slack-text">${msg}</div>
+    <div class="slack-actions">
+      <button class="copy-btn" onclick="copySlack()">📋 클립보드 복사</button>
+    </div>`;
+}
+
+function copySlack() {
+  const el = document.getElementById('slack-text');
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = '✓ 복사됨';
+    setTimeout(() => { btn.textContent = '📋 클립보드 복사'; }, 1500);
+  });
+}
+
+// 초기 기본값 설정
+const DEFS = {
+  i: [{s:120,d:10},{s:240,d:10},{s:540,d:10}],
+  c: [{s:120,d:15},{s:240,d:15},{s:360,d:60}],
+  l: [{s:120,d:10},{s:240,d:10},{s:540,d:10}]
+};
+['i','c','l'].forEach(t => { DEFS[t].forEach(b => addBreak(t, b)); updateNote(t); });
+</script>
+</body>
+</html>
