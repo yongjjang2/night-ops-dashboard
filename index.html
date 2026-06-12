@@ -572,7 +572,7 @@ function renderReport() {
           <div class="stat-row"><span class="stat-label">06시 실적</span><span class="stat-val">${key==='l' ? s.das.toLocaleString() : s.count.toLocaleString()}건</span></div>
           ${s.target ? `<div class="stat-row"><span class="stat-label">목표수량</span><span class="stat-val" style="color:var(--blue-text)">${s.target.toLocaleString()}건</span></div>` : ''}
           <div class="stat-row"><span class="stat-label">인당 시간당</span><span class="stat-val" style="color:var(--amber-text)">${s.ph}건/h</span></div>
-          <div class="stat-row"><span class="stat-label">실작업시간</span><span class="stat-val">${s.w06}분 + ${s.rem}분</span></div>
+          <div class="stat-row"><span class="stat-label">실작업시간</span><span class="stat-val">${s.w06 + s.rem}분</span></div>
         </div>`;
     }
     grid.appendChild(card);
