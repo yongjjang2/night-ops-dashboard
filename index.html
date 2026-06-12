@@ -312,7 +312,7 @@
         <h2>야간 생산성 보고 요약</h2>
         <span class="rdate" id="report-date"></span>
       </div>
-      <button class="capture-btn" onclick="captureReport(this)">📸 이미지 복사</button>
+      <button class="capture-btn" onclick="captureReport(this)">📸 캡처</button>
     </div>
 
     <div id="report-capture-area">
@@ -635,24 +635,14 @@ async function captureReport(btn) {
       useCORS: true,
       logging: false
     });
-    canvas.toBlob(async blob => {
-      try {
-        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-        showToast('✅ 이미지가 클립보드에 복사됐어요 — 슬랙에 붙여넣기 하세요!');
-      } catch {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `야간보고_${dateStr}.png`; a.click();
-        URL.revokeObjectURL(url);
-        showToast('📥 이미지를 다운로드했어요 (브라우저 제한으로 클립보드 불가)');
-      }
-      btn.disabled = false;
-      btn.textContent = '📸 이미지 복사';
-    }, 'image/png');
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    showToast('✅ 캡처됨 — 어디서든 Ctrl+V로 붙여넣기 하세요!');
   } catch (e) {
-    showToast('❌ 캡처에 실패했습니다');
+    showToast('❌ 클립보드 저장 실패 (HTTPS 환경에서만 동작합니다)');
+  } finally {
     btn.disabled = false;
-    btn.textContent = '📸 이미지 복사';
+    btn.textContent = '📸 캡처';
   }
 }
 
