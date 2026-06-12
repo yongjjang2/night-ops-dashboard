@@ -230,10 +230,8 @@
         </div>
         <div class="section-sep"></div>
         <div class="input-row" style="margin-bottom:10px;">
-          <div class="field"><label>퇴근시간</label>
-            <select id="i-end" onchange="syncIL();updateNote('i');">
-              <option value="540">09:00</option><option value="570">09:30</option><option value="600">10:00</option>
-            </select>
+          <div class="field"><label>마감시간</label>
+            <input type="time" id="i-end" value="09:00" onchange="syncIL();updateNote('i');">
           </div>
         </div>
         <div class="break-header">
@@ -263,10 +261,8 @@
         </div>
         <div class="section-sep"></div>
         <div class="input-row" style="margin-bottom:10px;">
-          <div class="field"><label>퇴근시간</label>
-            <select id="c-end" onchange="updateNote('c');">
-              <option value="480">08:00</option><option value="510">08:30</option><option value="540">09:00</option>
-            </select>
+          <div class="field"><label>마감시간</label>
+            <input type="time" id="c-end" value="08:00" onchange="updateNote('c');">
           </div>
         </div>
         <div class="break-header">
@@ -295,10 +291,8 @@
         </div>
         <div class="section-sep"></div>
         <div class="input-row" style="margin-bottom:10px;">
-          <div class="field"><label>퇴근시간</label>
-            <select id="l-end" onchange="syncIL();updateNote('l');">
-              <option value="540">09:00</option><option value="570">09:30</option><option value="600">10:00</option>
-            </select>
+          <div class="field"><label>마감시간</label>
+            <input type="time" id="l-end" value="09:00" onchange="syncIL();updateNote('l');">
           </div>
         </div>
         <div class="break-header">
@@ -380,6 +374,7 @@ const ST = { i: null, c: null, l: null };
 const BC = { i: 0, c: 0, l: 0 };
 
 function hm(m) { return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0'); }
+function timeToMin(val) { if (!val) return 0; const [h,m] = val.split(':').map(Number); return h*60+(m||0); }
 function gv(id) { return parseFloat(document.getElementById(id).value) || 0; }
 
 function switchTab(t) {
@@ -426,7 +421,7 @@ function brkOverlap(breaks, from, to) {
 }
 
 function updateNote(t) {
-  const endMin = parseInt(document.getElementById(t + '-end').value);
+  const endMin = timeToMin(document.getElementById(t + '-end').value);
   const breaks = getBreaks(t);
   const w06 = 360 - brkOverlap(breaks, 0, 360);
   const rem = (endMin - 360) - brkOverlap(breaks, 360, endMin);
@@ -440,13 +435,10 @@ function updateNote(t) {
 }
 
 function syncIL() {
-  const iv = document.getElementById('i-end').value;
-  const lv = document.getElementById('l-end').value;
-  if (event && event.target && event.target.id === 'i-end') {
-    document.getElementById('l-end').value = iv; updateNote('l');
-  } else {
-    document.getElementById('i-end').value = lv; updateNote('i');
-  }
+  const src = event && event.target && event.target.id === 'i-end' ? 'i' : 'l';
+  const dst = src === 'i' ? 'l' : 'i';
+  document.getElementById(dst + '-end').value = document.getElementById(src + '-end').value;
+  updateNote(dst);
 }
 
 function renderMetrics(elId, metrics) {
@@ -458,7 +450,7 @@ function renderMetrics(elId, metrics) {
 }
 
 function calc(t) {
-  const endMin = parseInt(document.getElementById(t + '-end').value);
+  const endMin = timeToMin(document.getElementById(t + '-end').value);
   const breaks = getBreaks(t);
   const w06 = 360 - brkOverlap(breaks, 0, 360);
   const rem = (endMin - 360) - brkOverlap(breaks, 360, endMin);
