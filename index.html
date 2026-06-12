@@ -113,12 +113,12 @@
   /* ── REPORT VIEW ── */
   .report-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
   .report-header h2 { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
-  .report-header .rdate { font-size: 12px; color: var(--text2); }
+  .report-header .rdate { font-size: 13px; color: var(--text); font-weight: 600; margin-top: 5px; }
   .report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 20px; }
   .rcard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
   .rcard-top { padding: 13px 16px 11px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
   .rcard-top h3 { font-size: 13px; font-weight: 600; }
-  .rcard-top .rtime { font-size: 12px; font-weight: 600; color: var(--text); margin-left: auto; }
+  .rcard-top .rtime { font-size: 13px; font-weight: 700; color: var(--blue-text); margin-left: auto; background: var(--blue-bg); padding: 2px 9px; border-radius: 20px; }
   .rcard-body { padding: 14px 16px; }
   .stat-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
   .stat-row:last-child { margin-bottom: 0; }
@@ -137,6 +137,7 @@
   .sum-cell { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
   .sum-cell .sl { font-size: 11px; color: var(--text2); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
   .sum-cell .sv { font-size: 22px; font-weight: 700; }
+  .sum-cell .sv-sm { font-size: 13px; font-weight: 600; line-height: 1.7; }
 
   /* ── SLACK VIEW ── */
   .slack-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
@@ -319,7 +320,7 @@
       <div class="summary-row" id="summary-row">
         <div class="sum-cell"><div class="sl">총 근무인원</div><div class="sv" id="sum-total">—</div></div>
         <div class="sum-cell"><div class="sl">기준시각</div><div class="sv">06:00</div></div>
-        <div class="sum-cell"><div class="sl">예상 마감시간</div><div class="sv" id="sum-endtime">—</div></div>
+        <div class="sum-cell"><div class="sl">예상 마감시간</div><div class="sv-sm" id="sum-endtime">—</div></div>
       </div>
       <div class="report-grid" id="report-grid"></div>
     </div>
@@ -560,8 +561,13 @@ function renderReport() {
   });
 
   document.getElementById('sum-total').textContent = totalPeople ? totalPeople + '명' : '—';
-  const endTimes = [...new Set([ST.i?.endLbl, ST.c?.endLbl, ST.l?.endLbl].filter(Boolean))];
-  document.getElementById('sum-endtime').textContent = endTimes.length ? endTimes.join(' · ') : '—';
+
+  const teamNames = { i: '야간입고', c: '개별클리닝', l: '런드리' };
+  const byTime = {};
+  ['i','c','l'].forEach(k => { if (ST[k]) { const t = ST[k].endLbl; (byTime[t] = byTime[t]||[]).push(teamNames[k]); } });
+  const etEl = document.getElementById('sum-endtime');
+  const lines = Object.entries(byTime).map(([t, names]) => `${names.join('·')} ${t}`);
+  etEl.innerHTML = lines.length ? lines.join('<br>') : '—';
 }
 
 function buildSlack() {
