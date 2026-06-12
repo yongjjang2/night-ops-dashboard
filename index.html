@@ -600,7 +600,7 @@ function buildSlack() {
   L.push('');
   if (ST.i) { const s=ST.i;
     L.push(`▶ 야간입고운영팀 (마감 ${s.endLbl})`);
-    L.push(`  · 근무 ${s.total}명 (분류 ${s.sort}명) / 실작업 ${s.w06}분+${s.rem}분`);
+    L.push(`  · 근무 ${s.total}명 (분류 ${s.sort}명) / 실작업 ${s.w06 + s.rem}분`);
     L.push(`  · 06시 분류 ${s.count.toLocaleString()}건 / 인당 ${s.ph}건/h`);
     L.push(`  · ${s.endLbl} 예상 ${s.est.toLocaleString()}건 (인당 ${s.ppt.toLocaleString()}건)`);
     if (s.ach!==null) L.push(`  · 목표 달성률 ${s.ach}% ${s.ach>=100?'✅':'⚠️'} (목표 ${s.target.toLocaleString()}건)`);
@@ -608,7 +608,7 @@ function buildSlack() {
   }
   if (ST.c) { const s=ST.c;
     L.push(`▶ 야간세탁 — 개별클리닝파트 (마감 ${s.endLbl})`);
-    L.push(`  · 근무 ${s.total}명 (분류 ${s.sort}명) / 실작업 ${s.w06}분+${s.rem}분`);
+    L.push(`  · 근무 ${s.total}명 (분류 ${s.sort}명) / 실작업 ${s.w06 + s.rem}분`);
     L.push(`  · 06시 분류 ${s.count.toLocaleString()}건 / 인당 ${s.ph}건/h`);
     L.push(`  · ${s.endLbl} 예상 ${s.est.toLocaleString()}건 (인당 ${s.ppt.toLocaleString()}건)`);
     if (s.ach!==null) L.push(`  · 목표 달성률 ${s.ach}% ${s.ach>=100?'✅':'⚠️'} (목표 ${s.target.toLocaleString()}건)`);
@@ -616,7 +616,7 @@ function buildSlack() {
   }
   if (ST.l) { const s=ST.l;
     L.push(`▶ 야간세탁 — 런드리파트 (마감 ${s.endLbl})`);
-    L.push(`  · 근무 ${s.total}명 / 실작업 ${s.w06}분+${s.rem}분`);
+    L.push(`  · 근무 ${s.total}명 / 실작업 ${s.w06 + s.rem}분`);
     L.push(`  · 06시 DAS할당 ${s.das.toLocaleString()}건 / 인당 ${s.ph}건/h`);
     L.push(`  · ${s.endLbl} 예상 ${s.est.toLocaleString()}건`);
     if (s.ach!==null) L.push(`  · 목표 달성률 ${s.ach}% ${s.ach>=100?'✅':'⚠️'} (목표 ${s.target.toLocaleString()}건)`);
